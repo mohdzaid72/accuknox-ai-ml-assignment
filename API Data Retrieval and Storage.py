@@ -10,15 +10,16 @@ def create_table(cursor):
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS books (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT UNIQUE,
+            title TEXT,
             author TEXT,
-            publication_year INTEGER
+            publication_year INTEGER,
+            UNIQUE(title,publication_year)
         )
     """)
 
 
 def fetch_books(url):
-    response = requests.get(url)
+    response = requests.get(url,timeout=20)
     response.raise_for_status()
 
     data = response.json()
@@ -33,7 +34,10 @@ def save_books(cursor, books):
         author = ", ".join(authors) if authors else "Unknown"
 
         publication_year = book.get("first_publish_year")
-
+        if publication_year is None:
+            print(f"Skipping book with missing publication year: {title}")
+            continue
+            
         cursor.execute("""
             INSERT OR IGNORE INTO books
             (title, author, publication_year)
@@ -64,9 +68,12 @@ def main():
     try:
         create_table(cursor)
         books = fetch_books(URL)
-        save_books(cursor, books)
-        connection.commit()
-        display_books(cursor)
+        if not books:
+            print("No books found.")
+        else:
+            save_books(cursor, books)
+            connection.commit()
+            display_books(cursor)
 
     finally:
         connection.close()

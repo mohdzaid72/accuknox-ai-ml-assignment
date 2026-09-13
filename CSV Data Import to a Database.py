@@ -24,12 +24,13 @@ def create_database(connection):
 def import_users(connection):
     df = pd.read_csv(CSV_FILE)
 
-
+    
+    df = df.dropna(subset=["name", "email"])
     df["name"] = df["name"].astype(str).str.strip()
     df["email"] = df["email"].astype(str).str.strip()
 
 
-    df = df.dropna(subset=["name", "email"])
+    
 
     cursor = connection.cursor()
 
